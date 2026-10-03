@@ -1,8 +1,12 @@
+# Build output
+ls
+*.o
+*.exe
+
 # Prerequisites
 *.d
 
 # Object files
-*.o
 *.ko
 *.obj
 *.elf
@@ -12,7 +16,7 @@
 *.map
 *.exp
 
-# Precompiled Headers
+# Precompiled headers
 *.gch
 *.pch
 
@@ -22,14 +26,13 @@
 *.la
 *.lo
 
-# Shared objects (inc. Windows DLLs)
+# Shared objects
 *.dll
 *.so
 *.so.*
 *.dylib
 
-# Executables
-*.exe
+# Other executables
 *.out
 *.app
 *.i*86
@@ -42,7 +45,7 @@
 *.idb
 *.pdb
 
-# Kernel Module Compile Results
+# Kernel module build artifacts
 *.mod*
 *.cmd
 .tmp_versions/
@@ -51,5 +54,5 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# debug information files
+# Debug information
 *.dwo

@@ -1,88 +1,79 @@
 # Son_23CE068_midterm
 
-UNIX `ls(1)` command implementation - Midterm Project
+A modular, simplified implementation of the UNIX `ls(1)` command in C, based
+on the subset of behavior described in the course-provided NetBSD manual.
 
-## Overview
+## Features
 
-This repository contains a simplified implementation of the UNIX `ls(1)` command in C. The project is designed to follow the subset of behavior described in the assignment manual and demonstrates core UNIX filesystem concepts, command-line parsing, and modular C program design.
+Supported command-line options:
 
-## Project Goal
+| Option | Description |
+| --- | --- |
+| `-A` | Include hidden entries but omit `.` and `..`. |
+| `-a` | Include all entries, including `.` and `..`. |
+| `-c` | Use status-change time for `-t` sorting and long-format timestamps. |
+| `-d` | List directory operands themselves; do not recurse. |
+| `-F` | Append a marker for directories, executables, symlinks, sockets, and FIFOs. |
+| `-f` | Leave directory entries unsorted. |
+| `-h` | Use human-readable sizes; with `-s`, display allocated bytes. |
+| `-i` | Display inode numbers. |
+| `-k` | Display `-s` counts in 1024-byte units. |
+| `-l` | Display permissions, link count, owner, group, size, time, and name. |
+| `-n` | Use numeric user and group IDs in long format. |
+| `-q` | Replace non-printable filename characters with `?`. |
+| `-R` | Recursively list subdirectories. |
+| `-r` | Reverse the selected sort order. |
+| `-S` | Sort by size, largest first. |
+| `-s` | Display allocated filesystem block counts. |
+| `-t` | Sort by the selected file time, newest first. |
+| `-u` | Use access time for `-t` sorting and long-format timestamps. |
+| `-w` | Print filename characters without replacing non-printable characters. |
 
-The objective of this project is to implement a small `ls`-like utility that can:
+Options can be combined. The last option in each pair `-h`/`-k`, `-l`/`-n`,
+`-q`/`-w`, `-c`/`-u`, and `-R`/`-d` takes precedence. Multiple operands are
+displayed with non-directories first. Errors are reported to standard error
+and produce a non-zero exit status.
 
-- list entries in a directory
-- support a limited set of options
-- handle hidden files when requested
-- print file metadata in a long format when required
-- process multiple directory arguments correctly
-- avoid crashes and handle invalid paths gracefully
+This is a coursework implementation of the specified subset, not a replacement
+for every platform-specific feature or output-layout detail of the system
+`ls`.
 
-## Repository
+## Build
 
-GitHub repository:
-https://github.com/nos1012/Son_23CE068_midterm
+Requires a C compiler and `make` on a POSIX-compatible system.
 
-## Expected Features
-
-This implementation is expected to include the required subset of `ls` behavior, such as:
-
-- default directory listing
-- option parsing (`-a`, `-l`, `-R`, and any other options specified by the assignment)
-- sorting of directory entries
-- recursive directory traversal when enabled
-- proper output formatting for files and directories
-- robust error handling for permission and path problems
-
-## Project Structure
-
-The project is organized into multiple source and header files, for example:
-
-- `src/main.c`
-- `src/ls.c`
-- `src/options.c`
-- `src/filesystem.c`
-- `include/ls.h`
-- `include/options.h`
-- `include/filesystem.h`
-- `Makefile`
-- `.gitignore`
-
-## Build Instructions
-
-To compile the project, run:
-
-```bash
+```sh
 make
 ```
 
-This will create the executable for the simplified `ls` implementation.
+## Usage
 
-## Run the Program
-
-Examples:
-
-```bash
-./ls_sim .
-./ls_sim -a .
-./ls_sim -l /tmp
-./ls_sim -R .
-```
-
-The exact command name may vary depending on the final executable name chosen in the Makefile.
-
-## Cleanup
-
-To remove compiled object files and the executable:
-
-```bash
+```sh
+./ls
+./ls -lah
+./ls -R /path/to/directory
+./ls -d /path/to/directory
 make clean
 ```
 
-## Notes
+`BLOCKSIZE` sets the default unit used by `-s`, unless overridden by `-h` or
+`-k`.
 
-- This is a simplified version of `ls` and should follow the assignment manual rather than full GNU `ls` behavior.
-- The program should be modular, readable, and well-commented.
-- Object files and compiled binaries must not be committed to the repository.
+## Source layout
+
+- `main.c`: initializes locale and starts the program.
+- `options.c`, `options.h`: parses command-line options.
+- `list.c`, `list.h`: handles operands, directory traversal, sorting, and
+  recursion.
+- `format.c`, `format.h`: formats names, metadata, long listings, and block
+  counts.
+- `ls.h`: shared option and entry types.
+- `Makefile`: build and cleanup rules.
+- `.gitignore`: excludes build products and object files.
+
+## Repository
+
+https://github.com/nos1012/Son_23CE068_midterm
 
 ## Author
 
