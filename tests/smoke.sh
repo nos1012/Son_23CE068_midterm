@@ -64,6 +64,26 @@ assert_matches()
     fi
 }
 
+assert_numeric_prefix()
+{
+    description=$1
+    content=$2
+    path=$3
+    prefix=${content%" $path"}
+
+    if [ "$prefix" = "$content" ] || [ -z "$prefix" ]; then
+        printf 'FAIL: %s (missing numeric prefix)\n' "$description" >&2
+        exit 1
+    fi
+    case "$prefix" in
+        *[!0-9]*)
+            printf 'FAIL: %s (prefix is not numeric: %s)\n' \
+                "$description" "$prefix" >&2
+            exit 1
+            ;;
+    esac
+}
+
 listing=$("$program" "$fixture/list")
 assert_equal "default sorted listing" \
     "$(printf 'a\nb\nlink\npipe\nsubdir\nx')" "$listing"
@@ -97,14 +117,15 @@ if [ -z "$b_position" ] || [ -z "$a_position" ] ||
 fi
 
 inode_listing=$("$program" -i "$fixture/list/a")
-assert_matches "-i prefixes the filename with its inode" '^[0-9]+ a$' "$inode_listing"
+assert_numeric_prefix "-i prefixes the filename with its inode" \
+    "$inode_listing" "$fixture/list/a"
 
 long_listing=$("$program" -l "$fixture/list")
 assert_matches "-l includes a long-format record" '^[^ ]{10} .* a$' "$long_listing"
 
 block_listing=$("$program" -s "$fixture/list/a")
-assert_matches "-s prefixes the filename with a block count" \
-    '^[0-9]+ a$' "$block_listing"
+assert_numeric_prefix "-s prefixes the filename with a block count" \
+    "$block_listing" "$fixture/list/a"
 
 human_listing=$("$program" -h -l "$fixture/list")
 if [ -z "$human_listing" ]; then
