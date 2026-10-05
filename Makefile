@@ -21,4 +21,4 @@ list.o: list.c list.h format.h ls.h
 format.o: format.c format.h ls.h
 
 clean:
-	$(RM) $(TARGET) $(OBJECTS)
+	rm -f $(TARGET) $(OBJECTS)
