@@ -52,6 +52,18 @@ assert_not_contains()
     fi
 }
 
+assert_matches()
+{
+    description=$1
+    pattern=$2
+    content=$3
+    if ! printf '%s\n' "$content" | grep -E "$pattern" >/dev/null; then
+        printf 'FAIL: %s (pattern not found: %s)\n' \
+            "$description" "$pattern" >&2
+        exit 1
+    fi
+}
+
 listing=$("$program" "$fixture/list")
 assert_equal "default sorted listing" \
     "$(printf 'a\nb\nlink\npipe\nsubdir\nx')" "$listing"
@@ -78,19 +90,21 @@ assert_equal "-r reverses name order" \
 by_size=$("$program" -S "$fixture/list")
 b_position=$(printf '%s\n' "$by_size" | grep -n -x 'b' | cut -d: -f1)
 a_position=$(printf '%s\n' "$by_size" | grep -n -x 'a' | cut -d: -f1)
-if [ "$b_position" -ge "$a_position" ]; then
+if [ -z "$b_position" ] || [ -z "$a_position" ] ||
+   [ "$b_position" -ge "$a_position" ]; then
     printf 'FAIL: -S should place the larger file before the smaller file\n' >&2
     exit 1
 fi
 
 inode_listing=$("$program" -i "$fixture/list/a")
-printf '%s\n' "$inode_listing" | grep -E '^[0-9]+ a$' >/dev/null
+assert_matches "-i prefixes the filename with its inode" '^[0-9]+ a$' "$inode_listing"
 
 long_listing=$("$program" -l "$fixture/list")
-printf '%s\n' "$long_listing" | grep -E '^[^ ]{10} .* a$' >/dev/null
+assert_matches "-l includes a long-format record" '^[^ ]{10} .* a$' "$long_listing"
 
 block_listing=$("$program" -s "$fixture/list/a")
-printf '%s\n' "$block_listing" | grep -E '^[0-9]+ a$' >/dev/null
+assert_matches "-s prefixes the filename with a block count" \
+    '^[0-9]+ a$' "$block_listing"
 
 human_listing=$("$program" -h -l "$fixture/list")
 if [ -z "$human_listing" ]; then
@@ -112,7 +126,8 @@ assert_contains "-R prints subdirectory header" "$recursive" "$fixture/list/subd
 
 multiple_operands=$("$program" "$fixture/list/subdir/inside" "$fixture/list")
 assert_equal "file operands are listed before directories" \
-    "inside" "$(printf '%s\n' "$multiple_operands" | head -n 1)"
+    "$fixture/list/subdir/inside" \
+    "$(printf '%s\n' "$multiple_operands" | head -n 1)"
 
 if "$program" -z >/dev/null 2>&1; then
     printf 'FAIL: invalid option should fail\n' >&2
