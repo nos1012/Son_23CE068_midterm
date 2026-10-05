@@ -52,6 +52,14 @@ human-readable output, filename quoting, recursive traversal, and error
 handling. A GitHub Actions workflow builds the program and runs these tests on
 pushes and pull requests.
 
+## Testing
+
+Tested on NetBSD 11.0:
+
+- `make` completed successfully.
+- `make test` reported `All ls smoke tests passed.`
+- `make clean` removed the executable and object files.
+
 ## Usage
 
 ```sh
