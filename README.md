@@ -77,4 +77,4 @@ https://github.com/nos1012/Son_23CE068_midterm
 
 ## Author
 
-Student: Son_23CE068
+Student: HoangThanhSon_23CE068
