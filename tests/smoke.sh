@@ -7,6 +7,7 @@ trap 'rm -rf "$fixture"' EXIT HUP INT TERM
 
 mkdir "$fixture/list" "$fixture/list/subdir"
 mkdir "$fixture/quoted"
+mkdir "$fixture/timestamps"
 printf 'a' > "$fixture/list/a"
 printf 'bbbb' > "$fixture/list/b"
 printf 'hidden' > "$fixture/list/.hidden"
@@ -16,7 +17,10 @@ chmod +x "$fixture/list/x"
 ln -s a "$fixture/list/link"
 mkfifo "$fixture/list/pipe"
 bad_name=$(printf 'bad\001name')
+utf8_name=$(printf 'caf\303\251')
 : > "$fixture/quoted/$bad_name"
+: > "$fixture/quoted/$utf8_name"
+touch -t 200001010000 "$fixture/timestamps/old"
 
 assert_equal()
 {
@@ -133,10 +137,15 @@ if [ -z "$human_listing" ]; then
     exit 1
 fi
 
-quoted_listing=$("$program" -q "$fixture/quoted")
-assert_equal "-q replaces control characters" "bad?name" "$quoted_listing"
+quoted_listing=$(LC_ALL=C.UTF-8 "$program" -q "$fixture/quoted")
+assert_contains "-q replaces control characters" "$quoted_listing" "bad?name"
+assert_contains "-q preserves printable UTF-8 characters" "$quoted_listing" "$utf8_name"
 raw_listing=$("$program" -w "$fixture/quoted")
-assert_equal "-w preserves raw filename bytes" "$bad_name" "$raw_listing"
+assert_contains "-w preserves raw filename bytes" "$raw_listing" "$bad_name"
+
+old_timestamp_listing=$("$program" -l "$fixture/timestamps")
+assert_matches "-l displays the year for old timestamps" \
+    '  2000 old$' "$old_timestamp_listing"
 
 directory_operand=$("$program" -d "$fixture/list")
 assert_equal "-d lists the directory itself" "$fixture/list" "$directory_operand"
@@ -144,6 +153,11 @@ assert_equal "-d lists the directory itself" "$fixture/list" "$directory_operand
 recursive=$("$program" -R "$fixture/list")
 assert_contains "-R lists nested entries" "$recursive" "inside"
 assert_contains "-R prints subdirectory header" "$recursive" "$fixture/list/subdir:"
+
+directory_after_recursive=$("$program" -R -d "$fixture/list")
+assert_equal "-d overrides an earlier -R" "$fixture/list" "$directory_after_recursive"
+recursive_after_directory=$("$program" -d -R "$fixture/list")
+assert_contains "-R overrides an earlier -d" "$recursive_after_directory" "inside"
 
 multiple_operands=$("$program" "$fixture/list/subdir/inside" "$fixture/list")
 assert_equal "file operands are listed before directories" \
