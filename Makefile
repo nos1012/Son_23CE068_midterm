@@ -5,9 +5,12 @@ LDFLAGS ?=
 TARGET = ls
 OBJECTS = main.o options.o list.o format.o
 
-.PHONY: all clean
+.PHONY: all test clean
 
 all: $(TARGET)
+
+test: $(TARGET)
+	sh tests/smoke.sh ./$(TARGET)
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $(OBJECTS)

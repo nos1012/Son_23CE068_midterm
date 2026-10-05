@@ -14,6 +14,8 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <wchar.h>
+#include <wctype.h>
 
 #if defined(__linux__)
 #include <sys/sysmacros.h>
@@ -103,15 +105,36 @@ static void print_human_size(FILE *stream, unsigned long long size)
 
 static void print_name(FILE *stream, const char *name, QuoteMode mode)
 {
-    const unsigned char *character = (const unsigned char *)name;
+    const char *character = name;
+    size_t remaining = strlen(name);
+    mbstate_t state = {0};
 
-    while (*character != '\0') {
-        if (mode == QUOTE_NONPRINTABLE && !isprint(*character)) {
+    if (mode == QUOTE_RAW) {
+        fputs(name, stream);
+        return;
+    }
+
+    while (remaining > 0) {
+        wchar_t wide_character;
+        size_t length = mbrtowc(&wide_character, character, remaining, &state);
+
+        if (length == (size_t)-1 || length == (size_t)-2) {
             fputc('?', stream);
-        } else {
-            fputc(*character, stream);
+            ++character;
+            --remaining;
+            memset(&state, 0, sizeof(state));
+            continue;
         }
-        ++character;
+        if (length == 0) {
+            break;
+        }
+        if (iswprint(wide_character)) {
+            fwrite(character, 1, length, stream);
+        } else {
+            fputc('?', stream);
+        }
+        character += length;
+        remaining -= length;
     }
 }
 
@@ -206,10 +229,14 @@ static time_t entry_time(const struct stat *metadata, TimeMode mode)
 static void print_timestamp(FILE *stream, time_t timestamp)
 {
     struct tm *local = localtime(&timestamp);
+    time_t now = time(NULL);
+    bool use_year = difftime(now, timestamp) > 180.0 * 24.0 * 60.0 * 60.0 ||
+                    difftime(timestamp, now) > 60.0 * 60.0;
     char buffer[32];
 
     if (local == NULL ||
-        strftime(buffer, sizeof(buffer), "%b %e %H:%M", local) == 0) {
+        strftime(buffer, sizeof(buffer),
+                 use_year ? "%b %e  %Y" : "%b %e %H:%M", local) == 0) {
         fprintf(stream, "??? ?? ??:??");
         return;
     }
@@ -289,21 +316,15 @@ int print_entry(FILE *stream, const Entry *entry, const Options *options)
     }
     if (options->show_blocks) {
         if (entry->has_metadata) {
+            unsigned long long count =
+                block_count(&entry->metadata, options);
+
             if (options->human_readable) {
-                unsigned long long blocks =
-                    entry->metadata.st_blocks < 0
-                        ? 0
-                        : (unsigned long long)entry->metadata.st_blocks;
-                unsigned long long bytes =
-                    blocks > ULLONG_MAX / 512ULL
-                        ? ULLONG_MAX
-                        : blocks * 512ULL;
-                print_human_size(stream, bytes);
-                fputc(' ', stream);
+                print_human_size(stream, count);
             } else {
-                fprintf(stream, "%llu ",
-                        block_count(&entry->metadata, options));
+                fprintf(stream, "%llu", count);
             }
+            fputc(' ', stream);
         } else {
             fprintf(stream, "? ");
         }
@@ -369,21 +390,9 @@ void print_total(FILE *stream, const EntryList *entries, const Options *options)
 
     for (index = 0; index < entries->count; ++index) {
         if (entries->items[index].has_metadata) {
-            if (options->human_readable) {
-                unsigned long long blocks =
-                    entries->items[index].metadata.st_blocks < 0
-                        ? 0
-                        : (unsigned long long)entries->items[index].metadata.st_blocks;
-                unsigned long long bytes =
-                    blocks > ULLONG_MAX / 512ULL
-                        ? ULLONG_MAX
-                        : blocks * 512ULL;
-                total = bytes > ULLONG_MAX - total ? ULLONG_MAX : total + bytes;
-            } else {
-                unsigned long long count =
-                    block_count(&entries->items[index].metadata, options);
-                total = count > ULLONG_MAX - total ? ULLONG_MAX : total + count;
-            }
+            unsigned long long count =
+                block_count(&entries->items[index].metadata, options);
+            total = count > ULLONG_MAX - total ? ULLONG_MAX : total + count;
         }
     }
     if (options->human_readable) {

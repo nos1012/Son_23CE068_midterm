@@ -44,7 +44,13 @@ Requires a C compiler and `make` on a POSIX-compatible system.
 
 ```sh
 make
+make test
 ```
+
+The smoke tests exercise hidden entries, classification, sorting, long and
+human-readable output, filename quoting, recursive traversal, and error
+handling. A GitHub Actions workflow builds the program and runs these tests on
+pushes and pull requests.
 
 ## Usage
 
